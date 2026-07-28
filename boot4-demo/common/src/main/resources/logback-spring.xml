@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  공용 로깅 설정. 모든 서비스가 common 모듈을 통해 이 파일을 공유한다.
+  - CONSOLE: 로컬 확인용, traceId/spanId 포함 텍스트
+  - LOGSTASH: Logstash 로 JSON(json_lines) 전송 -> Elasticsearch 적재
+  service 이름과 Logstash 목적지는 각 서비스의 application.yml 에서 주입.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="unknown"/>
+    <springProperty scope="context" name="logstashDestination" source="logstash.destination" defaultValue="logstash:5000"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [${appName},%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${logstashDestination}</destination>
+        <!-- Logstash 가 아직 안 떠 있어도 앱은 죽지 않고 재연결을 시도한다(데모 내구성). -->
+        <keepAliveDuration>5 minutes</keepAliveDuration>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <customFields>{"service":"${appName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOGSTASH"/>
+    </root>
+</configuration>

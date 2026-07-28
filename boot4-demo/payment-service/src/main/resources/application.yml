@@ -1,0 +1,21 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: payment-service
+  reactor:
+    context-propagation: auto
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+logstash:
+  destination: ${LOGSTASH_DESTINATION:localhost:5000}
+
+claude:
+  # 비어 있으면 실제 호출 없이 mock 응답. docker-compose 의 .env 로 주입 가능.
+  api-key: ${CLAUDE_API_KEY:}
+  model: ${CLAUDE_MODEL:claude-haiku-4-5-20251001}

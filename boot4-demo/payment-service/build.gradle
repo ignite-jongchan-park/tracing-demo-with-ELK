@@ -1,0 +1,9 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    implementation project(':common')
+}
+
+tasks.named('jar') {
+    enabled = false
+}

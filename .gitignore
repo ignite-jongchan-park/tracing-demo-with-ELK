@@ -1,0 +1,10 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.idea/
+*.iml
+.env
+*.log
+
+# OMC 운영 상태
+.omc/

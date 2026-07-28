@@ -1,0 +1,14 @@
+// 공통 라이브러리 모듈: 추적/로깅 설정과 WebClient 구성을 각 서비스가 공유한다.
+apply plugin: 'java-library'
+
+dependencies {
+    // api 로 노출해 서비스 모듈들이 스타터를 전이적으로 물려받게 한다.
+    api 'org.springframework.boot:spring-boot-starter-web'
+    api 'org.springframework.boot:spring-boot-starter-webflux'   // WebClient 제공
+    api 'org.springframework.boot:spring-boot-starter-actuator'  // observation/metrics
+    // Boot 4.0 은 관측/추적 자동구성이 모듈로 분리됨. OTel 추적에 필요한 3종:
+    api 'org.springframework.boot:spring-boot-opentelemetry'                    // OTel SDK 자동구성(TracerProvider)
+    api 'org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry' // OTel 기반 Tracer 빈 생성
+    api 'io.micrometer:micrometer-tracing-bridge-otel'                          // Micrometer<->OTel bridge 구현체
+    api 'net.logstash.logback:logstash-logback-encoder:8.0'      // JSON 로그 인코더
+}

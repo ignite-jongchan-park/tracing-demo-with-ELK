@@ -1,0 +1,9 @@
+# Boot 3 최소 데모.
+# 실행:  docker compose up --build
+# 확인:  curl http://localhost:8090/hello  → 앱 콘솔 로그에 [boot3-demo,traceId,spanId] 가 찍힌다.
+services:
+  boot3-demo:
+    build: .
+    container_name: boot3-demo
+    ports:
+      - "8090:8090"

@@ -1,0 +1,110 @@
+# 분산 추적 데모 전체 스택: ELK + 4개 MSA.
+# 실행: docker compose up --build
+# 데모:  curl http://localhost:8080/api/checkout/keyboard
+# 확인:  http://localhost:5601 (Kibana) 에서 traceId 로 검색
+
+services:
+  # ---------------- ELK ----------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false          # 데모 편의: 인증 비활성화
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/9200' 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [demo]
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.0
+    container_name: logstash
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "5000:5000"   # 앱 -> Logstash (TCP json_lines)
+      - "9600:9600"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks: [demo]
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks: [demo]
+
+  # ---------------- MSA ----------------
+  gateway:
+    build:
+      context: .
+      args:
+        MODULE: gateway
+    container_name: gateway
+    environment:
+      - LOGSTASH_DESTINATION=logstash:5000
+      - ORDER_URL=http://order-service:8081
+    ports:
+      - "8080:8080"
+    depends_on: [logstash, order-service]
+    networks: [demo]
+
+  order-service:
+    build:
+      context: .
+      args:
+        MODULE: order-service
+    container_name: order-service
+    environment:
+      - LOGSTASH_DESTINATION=logstash:5000
+      - INVENTORY_URL=http://inventory-service:8082
+      - PAYMENT_URL=http://payment-service:8083
+    ports:
+      - "8081:8081"
+    depends_on: [logstash, inventory-service, payment-service]
+    networks: [demo]
+
+  inventory-service:
+    build:
+      context: .
+      args:
+        MODULE: inventory-service
+    container_name: inventory-service
+    environment:
+      - LOGSTASH_DESTINATION=logstash:5000
+    ports:
+      - "8082:8082"
+    depends_on: [logstash]
+    networks: [demo]
+
+  payment-service:
+    build:
+      context: .
+      args:
+        MODULE: payment-service
+    container_name: payment-service
+    environment:
+      - LOGSTASH_DESTINATION=logstash:5000
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}     # 비어 있으면 mock 응답
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-haiku-4-5-20251001}
+    ports:
+      - "8083:8083"
+    depends_on: [logstash]
+    networks: [demo]
+
+networks:
+  demo:
+    driver: bridge

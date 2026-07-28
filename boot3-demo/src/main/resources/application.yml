@@ -1,0 +1,11 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: boot3-demo
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0   # 데모: 모든 요청 추적

@@ -1,0 +1,10 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    implementation project(':common')
+}
+
+// bootJar 만 산출하도록 plain jar 비활성화(도커 COPY 시 단일 jar 보장).
+tasks.named('jar') {
+    enabled = false
+}
