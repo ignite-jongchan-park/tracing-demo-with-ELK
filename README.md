@@ -105,6 +105,14 @@ docker compose down          # 컨테이너 종료
 docker compose down -v       # 볼륨까지 삭제(ES 데이터 초기화)
 ```
 
+#### (부록) ELK 매핑 폭발(Mapping Explosion) 재현
+동적으로 변하는 값을 필드 **값**이 아니라 **키**로 넣으면, 요청마다 새 필드가 생겨 인덱스의 `index.mapping.total_fields.limit`(기본 1000)을 넘고 인덱싱이 거부된다. ES가 떠 있는 상태에서 아래 스크립트로 재현할 수 있다.
+```bash
+bash scripts/mapping-explosion-demo.sh
+```
+- 좋은 패턴(`traceId`를 값으로) → 필드 수 고정, 안전
+- 나쁜 패턴(동적 값을 키로) → 필드 1000개 초과 → `Limit of total fields [1000] has been exceeded` (HTTP 400)
+
 ### 서비스 포트
 | 서비스 | 포트 |
 |---|---|
